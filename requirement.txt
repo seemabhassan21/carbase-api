@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-JWT-Extended
+Flask-Marshmallow
+marshmallow
+marshmallow-sqlalchemy
+requests
+celery
+redis
