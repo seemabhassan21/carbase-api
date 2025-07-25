@@ -1,0 +1,27 @@
+# Python junk
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Environment
+.env
+.venv/
+instance/
+
+# IDE junk
+.idea/
+.vscode/
+
+# Database/cache
+*.sqlite3
+dump.rdb
+celerybeat-schedule
+*.db
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Migrations
+migrations/
