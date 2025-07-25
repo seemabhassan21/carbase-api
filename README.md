@@ -32,102 +32,90 @@ A Flask-based backend API for managing car registration data. It fetches data fr
 | DELETE | `/api/cars/<id>`            | Yes  | Delete car by ID           |
 | POST   | `/api/cars/sync-cars`       | Yes  | Trigger background sync    |
 
+Filters supported on `/api/cars` via query params: `make`, `model`, `year`, `page`, `limit`.
+
+Example:
+```
+GET /api/cars?make=Toyota&year=2020&page=2&limit=20
+```
+
 ---
 
 ## Project Setup (Local)
 
-### 1. Clone and create environment
-
-```bash
-git clone https://github.com/yourusername/carbase-api.git
-cd carbase-api
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Create the .env file (required before first run)
-
-```env
-SECRET_KEY=your-secret-key
-JWT_SECRET_KEY=your-jwt-secret
-SQLALCHEMY_DATABASE_URI=sqlite:///instance/cars.db
-CAR_API_ID=your-parse-app-id
-CAR_API_KEY=your-parse-master-key
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/0
-```
-
-**Important:** Ensure these secrets are set explicitly. Otherwise, random values will be generated inside the container and invalidate tokens on every rebuild.
-
-### 3. Ensure the instance directory exists
-
-```bash
-mkdir -p instance
-chmod 777 instance
-```
-
-### 4. Initialize the database
-
-```bash
-flask shell
->>> from app import db
->>> db.create_all()
->>> exit()
-```
-
-### 5. Run services manually (non-Docker)
-
-**Redis:**
-```bash
-redis-server
-```
-
-**Flask app:**
-```bash
-python run.py
-```
-
-**Celery worker:**
-```bash
-celery -A run.celery worker --loglevel=info
-```
-
-**Celery beat (optional, for periodic syncing):**
-```bash
-celery -A run.celery beat --loglevel=info
-```
+1. **Clone and create environment**
+   ```bash
+   git clone https://github.com/yourusername/carbase-api.git
+   cd carbase-api
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. **Create the .env file (required before first run)**
+   ```env
+   SECRET_KEY=your-secret-key
+   JWT_SECRET_KEY=your-jwt-secret
+   SQLALCHEMY_DATABASE_URI=sqlite:///instance/cars.db
+   CAR_API_ID=your-parse-app-id
+   CAR_API_KEY=your-parse-master-key
+   CELERY_BROKER_URL=redis://localhost:6379/0
+   CELERY_RESULT_BACKEND=redis://localhost:6379/0
+   ```
+   **Important:** Ensure these secrets are set explicitly. Otherwise, random values will be generated inside the container and invalidate tokens on every rebuild.
+3. **Ensure the instance directory exists**
+   ```bash
+   mkdir -p instance
+   chmod 777 instance
+   ```
+4. **Initialize the database**
+   ```bash
+   flask shell
+   >>> from app import db
+   >>> db.create_all()
+   >>> exit()
+   ```
+5. **Run services manually (non-Docker)**
+   - Redis:
+     ```bash
+     redis-server
+     ```
+   - Flask app:
+     ```bash
+     python run.py
+     ```
+   - Celery worker:
+     ```bash
+     celery -A run.celery worker --loglevel=info
+     ```
+   - Celery beat (optional, for periodic syncing):
+     ```bash
+     celery -A run.celery beat --loglevel=info
+     ```
 
 ---
 
 ## Docker Setup
 
-### 1. Create .env file (required before build)
-
-```env
-SECRET_KEY=your-secret-key
-JWT_SECRET_KEY=your-jwt-secret
-SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/cars.db
-CAR_API_ID=your-parse-app-id
-CAR_API_KEY=your-parse-master-key
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
-```
-
-**Warning:** If JWT_SECRET_KEY is missing, the container will auto-generate a random key, invalidating all previously issued tokens. Always define it before running Docker!
-
-### 2. Ensure the instance directory exists on your host
-
-```bash
-mkdir -p instance
-chmod 777 instance
-```
-
-### 3. Build and start all services
-
-```bash
-docker-compose up --build
-```
+1. **Create .env file (required before build)**
+   ```env
+   SECRET_KEY=your-secret-key
+   JWT_SECRET_KEY=your-jwt-secret
+   SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/cars.db
+   CAR_API_ID=your-parse-app-id
+   CAR_API_KEY=your-parse-master-key
+   CELERY_BROKER_URL=redis://redis:6379/0
+   CELERY_RESULT_BACKEND=redis://redis:6379/0
+   ```
+   **Warning:** If JWT_SECRET_KEY is missing, the container will auto-generate a random key, invalidating all previously issued tokens. Always define it before running Docker!
+2. **Ensure the instance directory exists on your host**
+   ```bash
+   mkdir -p instance
+   chmod 777 instance
+   ```
+3. **Build and start all services**
+   ```bash
+   docker-compose up --build
+   ```
 
 ---
 
@@ -199,6 +187,18 @@ curl -X POST http://localhost:5000/api/cars/sync-cars \
 
 ---
 
+## Authentication
+
+This project uses JWT-based authentication. Tokens must be included in the Authorization header as:
+
+```
+Authorization: Bearer <your_jwt_token>
+```
+
+After registering or logging in, copy the token from the response and include it in every protected request.
+
+---
+
 ## Periodic Syncing
 
 Every 5 minutes, Celery Beat triggers `sync_cars` to fetch car models from the external API and update the local DB.
@@ -206,6 +206,33 @@ Every 5 minutes, Celery Beat triggers `sync_cars` to fetch car models from the e
 Check logs in:
 ```
 logs/sync_cars.log
+```
+
+---
+
+## Error Handling
+
+The API returns standard HTTP status codes with descriptive messages:
+- `400` – Bad Request (validation failed)
+- `401` – Unauthorized (missing or invalid token)
+- `404` – Not Found (car or route not found)
+- `409` – Conflict (duplicate car entry)
+- `500` – Server Error (unexpected failures)
+
+---
+
+## Secret Management
+
+All sensitive configuration (secrets, database URIs, API keys) should be placed in a `.env` file and loaded automatically. Example:
+
+```
+SECRET_KEY=your-secret-key
+JWT_SECRET_KEY=your-jwt-secret
+SQLALCHEMY_DATABASE_URI=sqlite:///instance/cars.db
+CAR_API_ID=your-parse-app-id
+CAR_API_KEY=your-parse-master-key
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```
 
 ---
@@ -238,7 +265,7 @@ carbase-api/
 ├── logs/
 │   └── sync_cars.log
 ├── run.py
-├���─ Dockerfile
+├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
 ├── .env
@@ -296,7 +323,7 @@ docker-compose up --build
 
 ## Maintainers
 
-Your Name – Backend Intern
+Seemab Hassan – Backend Intern
 
 Project designed to demonstrate Flask + Celery + Docker integration with a clean modular codebase.
 
