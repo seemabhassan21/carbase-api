@@ -1,0 +1,34 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+env/
+ENV/
+
+# IDE / Editor folders
+.idea/
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and runtime
+*.log
+celerybeat-schedule
+dump.rdb
+sync_cars.log
+
+# Environment
+.env
+
+# DB files (keep only if you want to persist)
+instance/
+*.sqlite3
+
+# Git
+.git
+.gitignore

@@ -6,7 +6,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI='sqlite:///cars.db'
     SQLALCHEMY_TRACK_MODIFICATION=False
     CELERY_BROKER_URL = 'redis://localhost:6379/0'
-    CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+    result_backend = "redis://redis:6379/0"
 
     CAR_API_URL = 'https://parseapi.back4app.com/classes/Car_Model_List?limit=10000'
     CAR_API_HEADERS = {

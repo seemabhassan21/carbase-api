@@ -1,5 +1,5 @@
-from .auth_routes import auth_bp
-from .car_routes import car_bp
+from .auth.auth_routes import auth_bp
+from .cars.car_routes import car_bp
 
 all_blueprints = [
     (auth_bp, '/api'),         # login, register, etc.

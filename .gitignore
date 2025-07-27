@@ -4,24 +4,27 @@ __pycache__/
 *.pyo
 *.log
 
-# Environment
+# Environments
 .env
 .venv/
-instance/
 
-# IDE junk
+# IDEs
 .idea/
 .vscode/
 
-# Database/cache
+# DB/Cache
 *.sqlite3
+*.db
 dump.rdb
 celerybeat-schedule
-*.db
+instance/
+
+# Migrations
+migrations/
+
+# Logs
+sync_cars.log
 
 # OS junk
 .DS_Store
 Thumbs.db
-
-# Migrations
-migrations/

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from app.models import db, Car
+from .car_schema import CarSchema
 
 car_bp = Blueprint('car', __name__)
 car_schema = CarSchema()
