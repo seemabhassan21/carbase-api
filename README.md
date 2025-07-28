@@ -6,7 +6,7 @@ A Flask-based backend API for managing car registration data. It fetches data fr
 
 ## Features
 
-- JWT-based user authentication (`/api/auth/signup`, `/api/auth/login`)
+- JWT-based user authentication (`/api/signup`, `/api/login`)
 - CRUD operations on car entries (`/api/cars`)
 - External car model API integration
 - Scheduled background syncing every 5 minutes (Celery Beat)
@@ -125,7 +125,7 @@ Below are example requests for all major endpoints. Replace `<your_token>` with 
 
 ### Sign Up
 ```bash
-curl -X POST http://localhost:5000/api/auth/signup \
+curl -X POST http://localhost:5000/api/signup \
   -H "Content-Type: application/json" \
   -d '{"username": "user1", "email": "user@example.com", "password": "pass123"}'
 ```
