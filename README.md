@@ -22,8 +22,8 @@ A Flask-based backend API for managing car registration data. It fetches data fr
 
 | Method | Route                       | Auth | Description                |
 |--------|-----------------------------|------|----------------------------|
-| POST   | `/api/auth/signup`          | No   | Register a new user        |
-| POST   | `/api/auth/login`           | No   | Login and get JWT token    |
+| POST   | `/api/signup`               | No   | Register a new user        |
+| POST   | `/api/login`                | No   | Login and get JWT token    |
 | GET    | `/api/cars`                 | Yes  | List all cars (with filters)|
 | GET    | `/api/cars/<id>`            | Yes  | Get car by ID              |
 | POST   | `/api/cars`                 | Yes  | Create a new car           |
@@ -85,11 +85,11 @@ GET /api/cars?make=Toyota&year=2020&page=2&limit=20
      ```
    - Celery worker:
      ```bash
-     celery -A run.celery worker --loglevel=info
+     celery -A app.tasks.celery_worker.celery worker --loglevel=info
      ```
    - Celery beat (optional, for periodic syncing):
      ```bash
-     celery -A run.celery beat --loglevel=info
+     celery -A app.tasks.celery_worker.celery beat --loglevel=info
      ```
 
 ---
@@ -132,7 +132,7 @@ curl -X POST http://localhost:5000/api/auth/signup \
 
 ### Login
 ```bash
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5000/api/login \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "pass123"}'
 ```
@@ -245,40 +245,13 @@ carbase-api/
 │   ├── __init__.py
 │   ├── config.py
 │   ├── extensions.py
-│   ├── models.py
-│   ├── routes/
-│   │   ├── __init__.py
-│   │   ├── auth/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth_routes.py
-│   │   │   └── user_schema.py
-│   │   └── cars/
-│   │       ├── __init__.py
-│   │       ├── car_routes.py
-│   │       └── car_schema.py
-│   ├── tasks/
-│   │   └── sync_cars.py
-│   ├── utils/
-│   │   └── auth.py
-├── instance/
-│   └── cars.db
-├── logs/
-│   └── sync_cars.log
-├── run.py
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── .env
-└── README.md
-```
-
-### Folder and File Explanations
-
-- `app/` - Main application package.
+│   ├── models/` - Main application package.
   - `__init__.py` - Initializes the Flask app and extensions.
   - `config.py` - Configuration settings and environment variable loading.
   - `extensions.py` - Initializes Flask extensions (e.g., SQLAlchemy, JWT).
-  - `models.py` - SQLAlchemy models for users and cars.
+  - `models/` - SQLAlchemy models organized by entity.
+    - `user.py` - User model for authentication.
+    - `car.py` - Car model for vehicle data.
   - `routes/` - Contains all route blueprints.
     - `auth/` - Authentication endpoints and schemas.
       - `auth_routes.py` - Signup and login logic.
@@ -286,7 +259,8 @@ carbase-api/
     - `cars/` - Car endpoints and schemas.
       - `car_routes.py` - CRUD and sync endpoints for cars.
       - `car_schema.py` - Marshmallow schemas for car validation.
-  - `tasks/` - Celery background tasks.
+  - `tasks/` - Celery background tasks and worker configuration.
+    - `celery_worker.py` - Celery app configuration and setup.
     - `sync_cars.py` - Task for syncing car data from the external API.
   - `utils/` - Utility functions (e.g., authentication helpers).
     - `auth.py` - Password hashing and JWT helpers.
