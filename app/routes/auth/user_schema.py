@@ -1,4 +1,3 @@
-# app/schemas/user_schema.py
 
 from marshmallow import Schema, fields, validate
 

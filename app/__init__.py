@@ -7,11 +7,13 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     ma.init_app(app)
     migrate.init_app(app, db)
 
+    # Register blueprints
     for bp, prefix in all_blueprints:
         app.register_blueprint(bp, url_prefix=prefix)
 
