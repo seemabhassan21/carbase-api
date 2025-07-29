@@ -279,6 +279,38 @@ carbase-api/
 - `logs/` - Contains application logs (created automatically)
 - `.env` - Environment variables (not committed for security)
 
+
+
+│   ├── models/` - Main application package.
+  - `__init__.py` - Initializes the Flask app and extensions.
+  - `config.py` - Configuration settings and environment variable loading.
+  - `extensions.py` - Initializes Flask extensions (e.g., SQLAlchemy, JWT).
+  - `models/` - SQLAlchemy models organized by entity.
+    - `user.py` - User model for authentication.
+    - `car.py` - Car model for vehicle data.
+  - `routes/` - Contains all route blueprints.
+    - `auth/` - Authentication endpoints and schemas.
+      - `auth_routes.py` - Signup and login logic.
+      - `user_schema.py` - Marshmallow schemas for user validation.
+    - `cars/` - Car endpoints and schemas.
+      - `car_routes.py` - CRUD and sync endpoints for cars.
+      - `car_schema.py` - Marshmallow schemas for car validation.
+  - `tasks/` - Celery background tasks and worker configuration.
+    - `celery_worker.py` - Celery app configuration and setup.
+    - `sync_cars.py` - Task for syncing car data from the external API.
+  - `utils/` - Utility functions (e.g., authentication helpers).
+    - `auth.py` - Password hashing and JWT helpers.
+- `instance/` - Stores the SQLite database file and can hold instance-specific configs.
+- `logs/` - Stores log files, such as `sync_cars.log` for background sync jobs.
+- `run.py` - Entry point to start the Flask app.
+- `Dockerfile` - Docker image build instructions.
+- `docker-compose.yml` - Multi-container orchestration for Flask, Celery, and Redis.
+- `requirements.txt` - Python dependencies.
+- `.env` - Environment variables (not committed to version control).
+- `README.md` - Project documentation.
+
+
+
 ---
 
 ## Testing JWT
