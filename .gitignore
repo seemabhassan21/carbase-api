@@ -2,11 +2,14 @@
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 *.log
 
 # Environments
 .env
 .venv/
+env/
+ENV/
 
 # IDEs
 .idea/
@@ -19,12 +22,16 @@ dump.rdb
 celerybeat-schedule
 instance/
 
-# Migrations
+# Migrations (if using Flask-Migrate)
 migrations/
 
 # Logs
 sync_cars.log
+logs/
 
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Git
+.git/

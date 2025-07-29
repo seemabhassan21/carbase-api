@@ -23,8 +23,8 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy the whole project
 COPY . .
 
-# Create instance folder if not already exists
-RUN mkdir -p /app/instance
+# Create instance folder and set permissions
+RUN mkdir -p /app/instance && chmod 777 /app/instance
 
 # Expose Flask port
 EXPOSE 5000

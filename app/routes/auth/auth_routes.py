@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.models import db, User
+from app.extensions import db
+from app.models import User
 from flask_jwt_extended import create_access_token
 from .user_schema import UserSchema
 
@@ -8,15 +9,16 @@ user_schema = UserSchema()
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
-    data = request.json
-    if not all(k in data for k in ('username', 'email', 'password')):
-        return jsonify({"error": "Missing fields"}), 400
+    data = request.get_json()
+    errors = user_schema.validate(data)
+    if errors:
+        return jsonify(errors), 400
 
     if User.query.filter_by(email=data['email']).first():
         return jsonify({"error": "Email already exists"}), 409
 
     user = User(username=data['username'], email=data['email'])
-    user.set_password(data['password'])
+    user.password_hash = data['password']  # Uses setter
     db.session.add(user)
     db.session.commit()
 
@@ -24,7 +26,10 @@ def signup():
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.json
+    data = request.get_json()
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({"error": "Missing email or password"}), 400
+        
     user = User.query.filter_by(email=data['email']).first()
     if user and user.check_password(data['password']):
         token = create_access_token(identity=str(user.id))
