@@ -8,12 +8,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set work directory
 WORKDIR /app
 
+# Create non-root user for security
+RUN adduser --disabled-password --gecos "" --no-create-home appuser
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     gcc \
     netcat-openbsd \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -23,8 +27,12 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy the whole project
 COPY . .
 
-# Create instance folder if not already exists
-RUN mkdir -p /app/instance
+# Create instance folder and set permissions
+RUN mkdir -p /app/instance && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
 
 # Expose Flask port
 EXPOSE 5000

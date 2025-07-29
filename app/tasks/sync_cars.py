@@ -1,9 +1,9 @@
 import json
 import requests
 from flask import current_app
-from app.models import db, Car
-from run import celery  # safer than importing from celery_worker
-
+from app.models import  Car
+from app.extensions import db
+from .celery_worker import celery
 @celery.task(name="sync_cars")
 def sync_cars():
     url = current_app.config['CAR_API_URL']

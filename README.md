@@ -6,7 +6,7 @@ A Flask-based backend API for managing car registration data. It fetches data fr
 
 ## Features
 
-- JWT-based user authentication (`/api/auth/signup`, `/api/auth/login`)
+- JWT-based user authentication (`/api/signup`, `/api/login`)
 - CRUD operations on car entries (`/api/cars`)
 - External car model API integration
 - Scheduled background syncing every 5 minutes (Celery Beat)
@@ -22,8 +22,8 @@ A Flask-based backend API for managing car registration data. It fetches data fr
 
 | Method | Route                       | Auth | Description                |
 |--------|-----------------------------|------|----------------------------|
-| POST   | `/api/auth/signup`          | No   | Register a new user        |
-| POST   | `/api/auth/login`           | No   | Login and get JWT token    |
+| POST   | `/api/signup`               | No   | Register a new user        |
+| POST   | `/api/login`                | No   | Login and get JWT token    |
 | GET    | `/api/cars`                 | Yes  | List all cars (with filters)|
 | GET    | `/api/cars/<id>`            | Yes  | Get car by ID              |
 | POST   | `/api/cars`                 | Yes  | Create a new car           |
@@ -70,7 +70,7 @@ GET /api/cars?make=Toyota&year=2020&page=2&limit=20
 4. **Initialize the database**
    ```bash
    flask shell
-   >>> from app import db
+   >>> from app.extensions import db
    >>> db.create_all()
    >>> exit()
    ```
@@ -85,11 +85,11 @@ GET /api/cars?make=Toyota&year=2020&page=2&limit=20
      ```
    - Celery worker:
      ```bash
-     celery -A run.celery worker --loglevel=info
+     celery -A app.tasks.celery_worker.celery worker --loglevel=info
      ```
    - Celery beat (optional, for periodic syncing):
      ```bash
-     celery -A run.celery beat --loglevel=info
+     celery -A app.tasks.celery_worker.celery beat --loglevel=info
      ```
 
 ---
@@ -125,14 +125,14 @@ Below are example requests for all major endpoints. Replace `<your_token>` with 
 
 ### Sign Up
 ```bash
-curl -X POST http://localhost:5000/api/auth/signup \
+curl -X POST http://localhost:5000/api/signup \
   -H "Content-Type: application/json" \
   -d '{"username": "user1", "email": "user@example.com", "password": "pass123"}'
 ```
 
 ### Login
 ```bash
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:5000/api/login \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "pass123"}'
 ```
@@ -245,7 +245,10 @@ carbase-api/
 │   ├── __init__.py
 │   ├── config.py
 │   ├── extensions.py
-│   ├── models.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   └── car.py
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   ├── auth/
@@ -257,47 +260,24 @@ carbase-api/
 │   │       ├── car_routes.py
 │   │       └── car_schema.py
 │   ├── tasks/
+│   │   ├── __init__.py
+│   │   ├── celery_worker.py
 │   │   └── sync_cars.py
-│   ├── utils/
-│   │   └── auth.py
-├── instance/
-│   └── cars.db
-├── logs/
-│   └── sync_cars.log
+│   └── utils/
+│       ├── __init__.py
+│       └── auth.py
 ├── run.py
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
-├── .env
+├── .gitignore
 └── README.md
 ```
 
-### Folder and File Explanations
-
-- `app/` - Main application package.
-  - `__init__.py` - Initializes the Flask app and extensions.
-  - `config.py` - Configuration settings and environment variable loading.
-  - `extensions.py` - Initializes Flask extensions (e.g., SQLAlchemy, JWT).
-  - `models.py` - SQLAlchemy models for users and cars.
-  - `routes/` - Contains all route blueprints.
-    - `auth/` - Authentication endpoints and schemas.
-      - `auth_routes.py` - Signup and login logic.
-      - `user_schema.py` - Marshmallow schemas for user validation.
-    - `cars/` - Car endpoints and schemas.
-      - `car_routes.py` - CRUD and sync endpoints for cars.
-      - `car_schema.py` - Marshmallow schemas for car validation.
-  - `tasks/` - Celery background tasks.
-    - `sync_cars.py` - Task for syncing car data from the external API.
-  - `utils/` - Utility functions (e.g., authentication helpers).
-    - `auth.py` - Password hashing and JWT helpers.
-- `instance/` - Stores the SQLite database file and can hold instance-specific configs.
-- `logs/` - Stores log files, such as `sync_cars.log` for background sync jobs.
-- `run.py` - Entry point to start the Flask app.
-- `Dockerfile` - Docker image build instructions.
-- `docker-compose.yml` - Multi-container orchestration for Flask, Celery, and Redis.
-- `requirements.txt` - Python dependencies.
-- `.env` - Environment variables (not committed to version control).
-- `README.md` - Project documentation.
+**Note:** The following directories are created at runtime and excluded from Git:
+- `instance/` - Contains SQLite database (created automatically)
+- `logs/` - Contains application logs (created automatically)
+- `.env` - Environment variables (not committed for security)
 
 ---
 
@@ -310,7 +290,7 @@ You can use [jwt.io](https://jwt.io/) to decode JWTs, but you must paste your JW
 ## Cleanup & Rebuild (Docker)
 
 To completely reset:
-
+Want a fresh restart of docker services follow the commands below 
 ```bash
 docker-compose down -v
 docker system prune -af
@@ -334,3 +314,25 @@ Project designed to demonstrate Flask + Celery + Docker integration with a clean
 - Don’t forget to map ports: 5000 (Flask) and 6379 (Redis)
 - SQLite file and .env are persisted via volumes
 - Secret keys must remain consistent across container rebuilds
+
+## Troubleshooting
+
+### Common Issues:
+
+
+1. **JWT Token Issues**:
+   - Ensure `JWT_SECRET_KEY` is consistent across rebuilds
+   - Tokens get expire after 15 minutes so make sure to  get new ones via `/api/login`
+
+2. **Database Not Found**:
+   ```bash
+   # Ensure instance directory exists
+   mkdir -p instance
+   chmod 777 instance
+   ```
+
+3. **Redis Connection Failed**:
+   ```bash
+   # Check if Redis is running
+   docker-compose logs redis
+   ```

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from app.models import db, User
+from app.models import User
+from app.extensions import db
 from flask_jwt_extended import create_access_token
 from .user_schema import UserSchema
 
@@ -16,7 +17,7 @@ def signup():
         return jsonify({"error": "Email already exists"}), 409
 
     user = User(username=data['username'], email=data['email'])
-    user.set_password(data['password'])
+    user.password = data['password']  # Use property setter
     db.session.add(user)
     db.session.commit()
 
@@ -26,7 +27,7 @@ def signup():
 def login():
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
-    if user and user.check_password(data['password']):
+    if user and user.verify_password(data['password']):  # Use verify_password
         token = create_access_token(identity=str(user.id))
         return jsonify(access_token=token), 200
     return jsonify({"error": "Invalid credentials"}), 401

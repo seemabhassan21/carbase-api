@@ -1,5 +1,3 @@
-
-
 from celery import Celery
 from app import create_app
 
@@ -23,4 +21,4 @@ class ContextTask(celery.Task):
 
 celery.Task = ContextTask
 
-from app.tasks import sync_cars  # this is mandatory!
+from .sync_cars import sync_cars  # Import task

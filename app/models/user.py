@@ -10,22 +10,18 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    def set_password(self, password):
+    @property
+    def password(self):
+        raise AttributeError('Password is not readable')
+
+    @password.setter
+    def password(self, password):
         self.password_hash = generate_password_hash(password)
 
-    def check_password(self, password):
+    def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def __repr__(self):
-        return f"<User {self.username}>"
+    def __str__(self):
+        return self.username  # Simple, clean output
 
-class Car(db.Model):
-    __tablename__ = 'cars'
-    id = db.Column(db.Integer, primary_key=True)
-    make = db.Column(db.String(100), nullable=False)
-    model = db.Column(db.String(100), nullable=False)
-    year = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    def __repr__(self):
-        return f"<Car {self.make} {self.model} {self.year}>"

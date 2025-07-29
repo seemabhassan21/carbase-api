@@ -1,10 +1,11 @@
 import os
 
+
 class Config:
-    SECRET_KEY=os.getenv("SECRET_KEY","super-secret")
-    JWT_SECRET_KEY=os.getenv("JWT_SECRET","jwt-secret")
-    SQLALCHEMY_DATABASE_URI='sqlite:///cars.db'
-    SQLALCHEMY_TRACK_MODIFICATION=False
+    SECRET_KEY = os.getenv("SECRET_KEY", "super-secret")
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET", "jwt-secret")
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///cars.db'
+    SQLALCHEMY_TRACK_MODIFICATION = False
     CELERY_BROKER_URL = 'redis://localhost:6379/0'
     result_backend = "redis://redis:6379/0"
 

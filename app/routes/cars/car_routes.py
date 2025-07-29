@@ -1,32 +1,49 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from app.models import db, Car
+from app.models import Car
+from app.extensions import db
 from .car_schema import CarSchema
 
 car_bp = Blueprint('car', __name__)
 car_schema = CarSchema()
 cars_schema = CarSchema(many=True)
 
-# Utility: fetch object or 404
-def get_or_404(model, id):
-    obj = model.query.get(id)
-    return obj if obj else None
+# --- Utility Functions ---
 
+def get_car_or_404(car_id):
+    car = Car.query.get(car_id)
+    if not car:
+        return jsonify({"error": "Car not found"}), 404
+    return car
 
-# GET /cars (List + Filter + Pagination)
+def validate_car_data(data, partial=False):
+    errors = car_schema.validate(data, partial=partial)
+    if errors:
+        return jsonify({"validation_errors": errors}), 400
+    return None
+
+def car_exists(make, model, year):
+    return Car.query.filter_by(make=make, model=model, year=year).first() is not None
+
+# --- Routes ---
+
 @car_bp.route('/', methods=['GET'])
 @jwt_required()
-def get_cars():
+def list_cars():
     query = Car.query
 
-    for field in ['make', 'model']:
-        val = request.args.get(field)
-        if val:
-            query = query.filter(getattr(Car, field).ilike(f"%{val}%"))
+    filters = {
+        'make': request.args.get('make'),
+        'model': request.args.get('model'),
+        'year': request.args.get('year', type=int)
+    }
 
-    year = request.args.get('year', type=int)
-    if year is not None:
-        query = query.filter(Car.year == year)
+    if filters['make']:
+        query = query.filter(Car.make.ilike(f"%{filters['make']}%"))
+    if filters['model']:
+        query = query.filter(Car.model.ilike(f"%{filters['model']}%"))
+    if filters['year']:
+        query = query.filter(Car.year == filters['year'])
 
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 10, type=int)
@@ -39,76 +56,84 @@ def get_cars():
         "pages": paginated.pages
     })
 
-
-# GET /cars/<id>
 @car_bp.route('/<int:id>', methods=['GET'])
 @jwt_required()
-def get_car(id):
-    car = get_or_404(Car, id)
-    return car_schema.jsonify(car) if car else jsonify({"error": "Not found"}), 404
+def retrieve_car(id):
+    car = get_car_or_404(id)
+    if isinstance(car, tuple):  # error tuple
+        return car
+    return jsonify(car_schema.dump(car))
 
-
-# POST /cars
 @car_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_car():
     data = request.get_json()
-    if (errors := car_schema.validate(data)):
-        return jsonify(errors), 400
 
-    if Car.query.filter_by(**data).first():
-        return jsonify({"error": "Car already exists"}), 409
+    error = validate_car_data(data)
+    if error:
+        return error
 
-    car = Car(**data)
-    db.session.add(car)
+    make, model, year = data.get('make'), data.get('model'), data.get('year')
+    if car_exists(make, model, year):
+        return jsonify({"error": "Car with same make, model and year already exists"}), 409
+
+    new_car = Car(**data)
+    db.session.add(new_car)
     db.session.commit()
-    return car_schema.jsonify(car), 201
 
+    return jsonify(car_schema.dump(new_car)), 201
 
-# PUT /cars/<id>
 @car_bp.route('/<int:id>', methods=['PUT'])
 @jwt_required()
-def update_car(id):
-    car = get_or_404(Car, id)
-    if not car:
-        return jsonify({"error": "Not found"}), 404
+def replace_car(id):
+    car = get_car_or_404(id)
+    if isinstance(car, tuple):
+        return car
 
     data = request.get_json()
-    if (errors := car_schema.validate(data)):
-        return jsonify(errors), 400
+    error = validate_car_data(data)
+    if error:
+        return error
 
-    for key, value in data.items():
-        setattr(car, key, value)
+    for field in ['make', 'model', 'year']:
+        setattr(car, field, data.get(field))
 
     db.session.commit()
-    return car_schema.jsonify(car)
+    return jsonify(car_schema.dump(car))
 
-
-# PATCH /cars/<id>
 @car_bp.route('/<int:id>', methods=['PATCH'])
 @jwt_required()
-def patch_car(id):
-    car = get_or_404(Car, id)
-    if not car:
-        return jsonify({"error": "Not found"}), 404
+def update_car(id):
+    car = get_car_or_404(id)
+    if isinstance(car, tuple):
+        return car
 
     data = request.get_json()
-    for key in ['make', 'model', 'year']:
-        if key in data:
-            setattr(car, key, data[key])
+    error = validate_car_data(data, partial=True)
+    if error:
+        return error
+
+    for field, value in data.items():
+        if hasattr(car, field):
+            setattr(car, field, value)
 
     db.session.commit()
-    return car_schema.jsonify(car)
+    return jsonify(car_schema.dump(car))
 
-
-# DELETE /cars/<id>
 @car_bp.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
 def delete_car(id):
-    car = get_or_404(Car, id)
-    if not car:
-        return jsonify({"error": "Not found"}), 404
+    car = get_car_or_404(id)
+    if isinstance(car, tuple):
+        return car
 
     db.session.delete(car)
     db.session.commit()
     return jsonify({"message": "Car deleted successfully"}), 200
+
+@car_bp.route('/sync-cars', methods=['POST'])
+@jwt_required()
+def sync_cars_endpoint():
+    from app.tasks.sync_cars import sync_cars
+    sync_cars.delay()
+    return jsonify({"message": "Car sync started"}), 200

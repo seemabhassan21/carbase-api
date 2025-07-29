@@ -5,7 +5,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
 
 from app import create_app
-from celery_worker import celery
+from app.tasks.celery_worker import celery
 
 # Create Flask app
 app = create_app()
